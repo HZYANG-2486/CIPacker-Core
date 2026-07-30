@@ -1,8 +1,8 @@
-# CiPack GUI 集成文档
+# CIPacker GUI 集成文档
 
-本文档面向希望为 CiPack 开发图形界面（GUI）外壳的开发者。
+本文档面向希望为 CIPacker 开发图形界面（GUI）外壳的开发者。
 
-通过 `--structured` 参数，CiPack 会向 **stderr** 输出机器可读的事件流，GUI 外壳可解析这些事件来渲染进度条、阶段提示、选项列表和交互对话框。
+通过 `--structured` 参数，CIPacker 会向 **stderr** 输出机器可读的事件流，GUI 外壳可解析这些事件来渲染进度条、阶段提示、选项列表和交互对话框。
 
 ## 启用方式
 
