@@ -1,4 +1,4 @@
-# CiPack - ClassIsland 配置打包工具
+# CIPacker
 
 纯 Python 实现的 ClassIsland 配置迁移工具，支持 CI 1.x / 2.x 配置打包、解包、查看和 CI 本体下载。
 
