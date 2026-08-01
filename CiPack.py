@@ -2009,24 +2009,24 @@ def prompt_select_version(yes: bool = False) -> str | None:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="ClassIsland 配置打包工具 —— 剔除通用结构,只打包用户配置",
+        description="CIPacker",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
   打包配置:
-    python ci_pack.py pack D:\\ClassIsland -o ci_config.zip
+    python CiPack.py pack D:\\ClassIsland -o ci_config.zip
 
   打包(含备份):
-    python ci_pack.py pack D:\\ClassIsland -o ci_config.zip --include-backups
+    python CiPack.py pack D:\\ClassIsland -o ci_config.zip --include-backups
 
   查看包内容:
-    python ci_pack.py list ci_config.zip
+    python CiPack.py list ci_config.zip
 
   解包到已有 CI 目录:
-    python ci_pack.py unpack ci_config.zip -d D:\\ClassIsland
+    python CiPack.py unpack ci_config.zip -d D:\\ClassIsland
 
   下载 ClassIsland:
-    python ci_pack.py download -d D:\\ClassIsland --ci-version 1.7.0.1
+    python CiPack.py download -d D:\\ClassIsland --ci-version 1.7.0.1
 """,
     )
     sub = parser.add_subparsers(dest="command", required=True)
