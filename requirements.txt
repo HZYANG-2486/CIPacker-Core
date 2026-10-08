@@ -1,1 +1,6 @@
+# CIPacker 核心运行时依赖
+# 仅 tqdm 为必需；其余为可选增强，见 pyproject.toml 的 optional-dependencies
 tqdm>=4.60.0
+
+# --- 可选增强（取消注释即可启用对应能力）----------------------------------- #
+# pyyaml>=6.0        # 插件 manifest 解析走 C 实现，更快更稳（等价于 pip install cipacker[yaml]）

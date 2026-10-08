@@ -216,3 +216,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# CIPacker 运行产物
+*.part
+ci_config.zip
+*.zip.sha256
+coverage.xml
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/

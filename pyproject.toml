@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cipacker"
+version = "3.0.0"
+description = "ClassIsland 配置打包 / 解包 / 校验 / 体检工具（确定性输出 · 分层迁移 · 智能体检 · 插件依赖闭包）"
+readme = "README.md"
+requires-python = ">=3.9"
+# 使用 SPDX 表达式（setuptools>=77 起，TOML 表写法 { file = ... } 已弃用）
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "CIPacker Contributors" }]
+keywords = ["classisland", "backup", "migration", "packaging", "zip"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Natural Language :: Chinese (Simplified)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Archiving :: Backup",
+    "Topic :: Utilities",
+]
+
+# 核心运行时仅依赖 tqdm；其它全部为可选增强。
+dependencies = ["tqdm>=4.60.0"]
+
+[project.optional-dependencies]
+# 安装 PyYAML 后，插件 manifest 解析会走 C 实现，速度更快、容错更强
+yaml = ["pyyaml>=6.0"]
+dev = ["pyyaml>=6.0", "ruff>=0.5", "mypy>=1.8"]
+
+[project.scripts]
+cipacker = "cipacker.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/HZYANG-2486/CIPacker-Core"
+Repository = "https://github.com/HZYANG-2486/CIPacker-Core"
+Issues = "https://github.com/HZYANG-2486/CIPacker-Core/issues"
+Changelog = "https://github.com/HZYANG-2486/CIPacker-Core/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+packages = ["cipacker", "cipacker.download", "cipacker.install"]
+py-modules = ["CiPack"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+# legacy/ 是刻意留档的历史实现（用于对照 README 中记录的 7 个历史缺陷），
+# 不参与 Lint，避免为「保持缺陷可读」而反复改写。
+exclude = ["legacy"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true
+warn_unused_ignores = true

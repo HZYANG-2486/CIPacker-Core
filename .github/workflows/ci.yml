@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+
+# 同一分支的连续推送只保留最后一次，避免排队浪费额度
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ------------------------------------------------------------------ #
+  # 单元测试：跨 Python 版本 × 跨操作系统矩阵
+  #
+  # 之所以要跨平台，是因为本项目大量处理文件路径（Path、盘符、符号链接、
+  # 原子替换 .ciptmp），这些行为在 Windows / Linux / macOS 上并不一致——
+  # 单跑 Linux 无法发现 Windows 上的盘符或路径分隔符回归。
+  # ------------------------------------------------------------------ #
+  test:
+    name: test (py${{ matrix.python-version }} / ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        exclude:
+          # 非 Linux 平台只跑首尾版本，控制矩阵规模与额度消耗
+          - os: windows-latest
+            python-version: "3.10"
+          - os: windows-latest
+            python-version: "3.11"
+          - os: windows-latest
+            python-version: "3.12"
+          - os: macos-latest
+            python-version: "3.10"
+          - os: macos-latest
+            python-version: "3.11"
+          - os: macos-latest
+            python-version: "3.12"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyyaml
+
+      - name: 运行测试套件
+        run: python run_tests.py -v
+
+  # ------------------------------------------------------------------ #
+  # 静态检查：Lint + 类型检查
+  #
+  # 单独成一个 job，这样即使测试矩阵中某个平台抖动，Lint 结论也能独立呈现。
+  # ------------------------------------------------------------------ #
+  lint:
+    name: lint & type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: 安装检查工具
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyyaml ruff mypy types-PyYAML
+
+      - name: ruff（代码风格与常见缺陷）
+        run: ruff check . --output-format=github
+
+      - name: mypy（类型检查）
+        run: mypy cipacker
+
+  # ------------------------------------------------------------------ #
+  # 打包冒烟测试：确认 wheel / sdist 能正常构建，且装完能用
+  # ------------------------------------------------------------------ #
+  build:
+    name: build & install smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: 安装构建工具
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: 构建 wheel 与 sdist
+        run: python -m build
+
+      - name: 校验元数据
+        run: |
+          python -m pip install twine
+          twine check dist/*
+
+      - name: 安装并冒烟运行
+        run: |
+          pip install dist/*.whl
+          cipacker --version
+          python -m cipacker --help
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7

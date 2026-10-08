@@ -1,0 +1,25 @@
+# CIPacker 源码分发（sdist）内含文件清单。
+# wheel 只含 cipacker/ 包本身；下述文件仅进入 sdist，供使用者复现测试与查阅留档。
+
+include README.md
+include CHANGELOG.md
+include LICENSE
+include requirements.txt
+include GUI_INTEGRATION.md
+include pyproject.toml
+include run_tests.py
+
+# 兼容入口（瘦 shim），供 `python CiPack.py` 与旧脚本调用
+include CiPack.py
+
+# 历史留档实现与说明（对照 CHANGELOG 记录的 v2 缺陷）
+recursive-include legacy *.py *.md
+
+# 测试套件与夹具：让使用者可自行复现 `python run_tests.py`
+recursive-include tests *.py
+
+# 排除全部缓存与构建残留
+global-exclude __pycache__
+global-exclude *.py[codz]
+global-exclude *.egg-info
+global-exclude .DS_Store
