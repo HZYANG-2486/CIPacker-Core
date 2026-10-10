@@ -346,6 +346,30 @@ class TestRedactDoesNotTouchSource(CIPackerTestCase):
         self.assertEqual(before, after, "脱敏临时目录未被清理")
 
 
+def _symlink_supported() -> bool:
+    """当前环境是否可创建符号链接。
+
+    Windows 上创建符号链接需要管理员权限或开发者模式，普通权限会抛
+    ``OSError``。GitHub Actions 的 Windows runner 通常有权限，但本地
+    Windows 不一定——因此这里做能力探测，不支持时**跳过**相关用例，
+    而不是让整条流水线变红。
+    """
+    import os
+    import tempfile
+
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "src.txt"
+            src.write_text("x", encoding="utf-8")
+            os.symlink(src, Path(tmp) / "link.txt")
+        return True
+    except (OSError, NotImplementedError, AttributeError):
+        return False
+
+
+_SYMLINK_OK = _symlink_supported()
+
+
 class TestSymlinkSafety(CIPackerTestCase):
     """回归：符号链接不得被跟随。
 
@@ -353,6 +377,7 @@ class TestSymlinkSafety(CIPackerTestCase):
     从而把宿主机任意文件（如 /etc/shadow）的内容打进迁移包。
     """
 
+    @unittest.skipUnless(_SYMLINK_OK, "本环境无法创建符号链接（Windows 需开发者模式）")
     def test_symlinked_file_excluded_from_package(self):
         import os
 
@@ -367,6 +392,7 @@ class TestSymlinkSafety(CIPackerTestCase):
         rels = {i.rel for i in iter_files(detect_layout(root))}
         self.assertNotIn("Profiles/leak.json", rels, "符号链接不应被收集")
 
+    @unittest.skipUnless(_SYMLINK_OK, "本环境无法创建符号链接（Windows 需开发者模式）")
     def test_symlink_content_not_in_archive(self):
         import os
         import zipfile
