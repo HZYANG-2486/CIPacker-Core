@@ -22,7 +22,10 @@ class TestLayoutDetection(CIPackerTestCase):
         root = self.make_v1()
         layout = detect_layout(root)
         self.assertIs(layout.kind, LayoutKind.V1)
-        self.assertEqual(layout.app_root, root)
+        # app_root 是经过 resolve 的规范化路径，不能与未解析的临时目录直接比较：
+        # macOS 上临时目录位于 /var/folders/...，而 /var 是指向 /private/var 的
+        # 符号链接，resolve 后前缀会变化。两边都解析才是正确的比较方式。
+        self.assertEqual(layout.app_root, root.resolve())
         self.assertIsNone(layout.version_dir)
         self.assertTrue(layout.is_valid_install())
 
