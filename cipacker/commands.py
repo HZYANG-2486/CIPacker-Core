@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 
@@ -632,15 +633,41 @@ def doctor_command(args) -> int:
     return EXIT_OK
 
 
-_SEVERITY_MARK = {
+#: 带图形符号的严重度标记（可读性更好）。
+_FANCY_MARKS = {
     "error": "✗",
     "warning": "!",
     "info": "i",
     "pass": "✓",
 }
 
+#: ASCII 降级标记：当输出流编码无法表示 ✓/✗ 时使用。
+_ASCII_MARKS = {
+    "error": "x",
+    "warning": "!",
+    "info": "i",
+    "pass": "v",
+}
+
+
+def _severity_marks() -> dict[str, str]:
+    """按标准输出流的编码能力选择符号标记。
+
+    ``✓``(U+2713) 与 ``✗``(U+2717) 不在 GBK/CP936 字符集内，直接输出会抛
+    ``UnicodeEncodeError``。CLI 入口已把标准流重配置为 UTF-8，这里再做一层
+    兜底：若重配置未生效（例如宿主替换了 ``sys.stdout``），则降级为 ASCII，
+    保证不会因编码问题崩溃，也不会显示成乱码方框。
+    """
+    encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+    try:
+        "".join(_FANCY_MARKS.values()).encode(encoding)
+    except (UnicodeEncodeError, LookupError):
+        return _ASCII_MARKS
+    return _FANCY_MARKS
+
 
 def _print_report(report, verbose: bool = False) -> None:
+    marks = _severity_marks()
     logui.section(f"体检报告（健康分 {report.score}/100）")
     logui.out(f"  目录: {report.root}")
     logui.out(f"  结构: {report.layout}   版本: {report.ci_version or '未知'}")
@@ -653,7 +680,7 @@ def _print_report(report, verbose: bool = False) -> None:
     )
 
     for finding in report.findings:
-        marker = _SEVERITY_MARK.get(finding.severity.value, "-")
+        marker = marks.get(finding.severity.value, "-")
         structured.finding(
             finding.rule_id, finding.severity.value, finding.message, finding.location
         )

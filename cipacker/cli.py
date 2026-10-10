@@ -26,6 +26,36 @@ from .errors import (
 PROG = "cipacker"
 
 
+def _configure_stdio() -> None:
+    """把标准流配置为 UTF-8，并用替换式错误处理兜底。
+
+    **为什么必须做这件事**
+
+    简体中文 Windows 上，控制台/管道默认使用 GBK(cp936) 编码。当输出被
+    重定向到文件或管道时（CI 环境、``cipacker doctor > out.txt``、
+    ``| more``、GUI 外壳捕获子进程输出等），Python 会按 GBK 编码 stdout/
+    stderr。此时任何超出 GBK 字符集的字符——体检报告里的 ``✓`` ``✗``、
+    文件名中的 emoji 等——都会让 ``print`` 抛 ``UnicodeEncodeError``，
+    使**整个命令崩溃**，而不是简单地显示异常。
+
+    统一改为 UTF-8 后，输出在任何平台都一致可读；``errors="replace"``
+    进一步保证输出流永远可写，进程不会因编码问题中断。
+
+    交互式 Windows 控制台不受影响：Python 的 ConsoleIO 通过
+    ``WriteConsoleW`` 直接写宽字符，不经过此编码路径。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            # 流被替换为不可重配置的对象（如自定义外壳）时静默跳过，
+            # 由调用侧的其他兜底保证不崩溃。
+            pass
+
+
 # --------------------------------------------------------------------------- #
 # 参数解析
 # --------------------------------------------------------------------------- #
@@ -243,6 +273,7 @@ def cmd_download(args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     """CLI 入口。``result=`` 事件在此**唯一**输出。"""
+    _configure_stdio()
     parser = build_parser()
     args = parser.parse_args(argv)
 
